@@ -1,0 +1,255 @@
+const API_URL = 'https://script.google.com/macros/s/AKfycbyWn0dsA-9gG16YLGzn7HLaNQIqRxLWh_n4xWn5VO2_IdS-tT074ckEYOb1xwFNLYeQGg/exec';
+
+const state = {
+  data: null, cargado: false, error: null, programaActual: null
+};
+
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function hoyEnNicaragua() {
+  const ahora = new Date();
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Managua', year: 'numeric', month: '2-digit', day: '2-digit' });
+  return fmt.format(ahora);
+}
+
+function fechaISOaLocal(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatearFechaLarga(iso) {
+  const d = fechaISOaLocal(iso);
+  return `${capitalizar(DIAS[d.getDay()])} ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+function capitalizar(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function proximoLunesISO() {
+  const hoyISO = hoyEnNicaragua();
+  const hoy = fechaISOaLocal(hoyISO);
+  const dia = hoy.getDay();
+  let delta = (1 - dia + 7) % 7;
+  if (delta === 0 && dia === 1) delta = 0;
+  const prox = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + delta);
+  return toISO(prox);
+}
+
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function seleccionarPrograma(programas) {
+  if (!programas || !programas.length) return null;
+  const hoyISO = hoyEnNicaragua();
+  const proxLun = proximoLunesISO();
+  const activos = programas.filter(p => p.Estado !== 'Cancelado');
+  const exacto = activos.find(p => p.Fecha === proxLun);
+  if (exacto) return exacto;
+  const futuros = activos.filter(p => p.Fecha >= hoyISO).sort((a, b) => a.Fecha.localeCompare(b.Fecha));
+  return futuros.length ? futuros[0] : null;
+}
+
+function setStatus(kind, text) {
+  const el = document.getElementById('status');
+  const txt = document.getElementById('status-text');
+  if (!el || !txt) return;
+  el.className = 'status is-' + kind;
+  txt.textContent = text;
+}
+
+async function cargarDatos() {
+  setStatus('loading', 'Cargando…');
+  mostrarSolo('programa', 'loading');
+  mostrarSolo('equipos', 'loading');
+  mostrarSolo('canciones', 'loading');
+
+  // Mensaje amigable si tarda más de 3 segundos
+  const timerAviso = setTimeout(() => {
+    const textosCarga = document.querySelectorAll('.loading-card p');
+    textosCarga.forEach(t => t.textContent = 'Conectando con la nube... un momento.');
+  }, 3000);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // Límite total de 10 segs
+
+  try {
+    const url = API_URL + '?action=all&t=' + Date.now();
+    const resp = await fetch(url, { method: 'GET', cache: 'no-store', signal: controller.signal });
+    
+    clearTimeout(timeoutId);
+    clearTimeout(timerAviso);
+    
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const json = await resp.json();
+    
+    if (!json || json.ok !== true) throw new Error((json && json.error) || 'Respuesta inválida');
+    
+    const d = json.data || {};
+    state.data = {
+      programas: Array.isArray(d.programas) ? d.programas : [],
+      equipos: Array.isArray(d.equipos) ? d.equipos : [],
+      canciones: Array.isArray(d.canciones) ? d.canciones : []
+    };
+    state.error = null;
+    state.cargado = true;
+    state.programaActual = seleccionarPrograma(state.data.programas);
+    setStatus('ok', 'Actualizado');
+  } catch (err) {
+    clearTimeout(timeoutId);
+    clearTimeout(timerAviso);
+    if (err.name === 'AbortError') {
+      state.error = 'La conexión tardó demasiado. Revisa tu internet.';
+    } else {
+      state.error = err.message || 'Error desconocido';
+    }
+    state.cargado = true;
+    state.programaActual = null;
+    setStatus('error', 'Error de conexión');
+  }
+
+  // Restaurar textos originales
+  document.querySelectorAll('.loading-card p').forEach((t, i) => {
+    if (i === 0) t.textContent = 'Cargando el programa…';
+    if (i === 1) t.textContent = 'Cargando los equipos…';
+    if (i === 2) t.textContent = 'Cargando el repertorio…';
+  });
+
+  renderTodo();
+}
+
+function renderTodo() {
+  renderPrograma(); renderEquipos(); renderCanciones();
+}
+
+function mostrarSolo(vista, estado) {
+  const ids = {
+    programa: ['programa-loading','programa-error','programa-empty','programa-content'],
+    equipos:  ['equipos-loading','equipos-error','equipos-empty','equipos-content'],
+    canciones:['canciones-loading','canciones-error','canciones-empty','canciones-content']
+  };
+  const map = { loading: 0, error: 1, empty: 2, content: 3 };
+  const [ld, er, em, ct] = ids[vista].map(id => document.getElementById(id));
+  if (!ld || !er || !em || !ct) return;
+  [ld, er, em, ct].forEach(el => el.classList.add('hidden'));
+  const target = [ld, er, em, ct][map[estado]];
+  if (target) target.classList.remove('hidden');
+}
+
+function renderPrograma() {
+  if (!state.cargado) { mostrarSolo('programa', 'loading'); return; }
+  if (state.error) {
+    document.getElementById('programa-error-msg').textContent = state.error;
+    mostrarSolo('programa', 'error'); return;
+  }
+  const prog = state.programaActual;
+  if (!prog) { mostrarSolo('programa', 'empty'); return; }
+
+  document.getElementById('prog-nombre').textContent = prog.Nombre_encuentro || 'Encuentro';
+  document.getElementById('prog-fecha').textContent = formatearFechaLarga(prog.Fecha);
+  document.getElementById('prog-hora').textContent = prog.Hora || '—';
+  document.getElementById('prog-lugar').textContent = prog.Lugar || '—';
+
+  const badge = document.getElementById('prog-estado');
+  badge.textContent = prog.Estado || '—';
+  badge.className = 'badge ' + (prog.Estado === 'Confirmado' ? 'is-confirmado' : prog.Estado === 'Cancelado' ? 'is-cancelado' : '');
+
+  renderEquipoEnLista('prog-equipo-a', 'A', prog.ID_programa);
+  renderEquipoEnLista('prog-equipo-b', 'B', prog.ID_programa);
+  renderCancionesEnLista('prog-canciones', prog.ID_programa);
+  mostrarSolo('programa', 'content');
+}
+
+function renderEquipos() {
+  if (!state.cargado) { mostrarSolo('equipos', 'loading'); return; }
+  if (state.error) {
+    document.getElementById('equipos-error-msg').textContent = state.error;
+    mostrarSolo('equipos', 'error'); return;
+  }
+  const prog = state.programaActual;
+  if (!prog) { mostrarSolo('equipos', 'empty'); return; }
+
+  document.getElementById('equipos-context').textContent = `Encuentro: ${prog.Nombre_encuentro} · ${formatearFechaLarga(prog.Fecha)} · ${prog.Hora || ''} · ${prog.Lugar || ''}`.trim();
+  renderEquipoEnLista('equipos-a', 'A', prog.ID_programa);
+  renderEquipoEnLista('equipos-b', 'B', prog.ID_programa);
+  mostrarSolo('equipos', 'content');
+}
+
+function renderEquipoEnLista(ulId, equipo, idPrograma) {
+  const ul = document.getElementById(ulId);
+  if (!ul) return;
+  ul.innerHTML = '';
+  const miembros = (state.data.equipos || []).filter(e => e.ID_programa === idPrograma && e.Equipo === equipo).sort((a, b) => a.Orden - b.Orden);
+
+  if (!miembros.length) {
+    ul.innerHTML = '<li class="empty-msg">Sin integrantes asignados</li>';
+    return;
+  }
+  miembros.forEach(m => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="persona">${m.Nombre_integrante}</span><span class="funcion">${m.Funcion_o_instrumento || ''}</span>`;
+    ul.appendChild(li);
+  });
+}
+
+function renderCanciones() {
+  if (!state.cargado) { mostrarSolo('canciones', 'loading'); return; }
+  if (state.error) {
+    document.getElementById('canciones-error-msg').textContent = state.error;
+    mostrarSolo('canciones', 'error'); return;
+  }
+  const prog = state.programaActual;
+  if (!prog) { mostrarSolo('canciones', 'empty'); return; }
+
+  document.getElementById('canciones-context').textContent = `Encuentro: ${prog.Nombre_encuentro} · ${formatearFechaLarga(prog.Fecha)}`.trim();
+  const hay = renderCancionesEnLista('canciones-lista', prog.ID_programa);
+  if (!hay) { mostrarSolo('canciones', 'empty'); return; }
+  mostrarSolo('canciones', 'content');
+}
+
+function renderCancionesEnLista(olId, idPrograma) {
+  const ol = document.getElementById(olId);
+  if (!ol) return false;
+  ol.innerHTML = '';
+  const canciones = (state.data.canciones || []).filter(c => c.ID_programa === idPrograma).sort((a, b) => a.Orden - b.Orden);
+
+  if (!canciones.length) {
+    ol.innerHTML = '<li class="empty-msg">Sin canciones programadas</li>';
+    return false;
+  }
+
+  canciones.forEach(c => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="song-num" aria-hidden="true">${c.Orden}</span>
+      <div>
+        <div class="song-title">${c.Titulo_cancion}</div>
+        ${c.Artista_o_version ? `<div class="song-artist">${c.Artista_o_version}</div>` : ''}
+      </div>
+      <span class="song-key">${c.Tonalidad || '—'}</span>
+    `;
+    ol.appendChild(li);
+  });
+  return true;
+}
+
+function activarVista(nombre) {
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    const on = btn.dataset.view === nombre;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  document.getElementById('view-' + nombre).classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => activarVista(btn.dataset.view));
+  });
+  document.getElementById('programa-retry').addEventListener('click', cargarDatos);
+  document.getElementById('equipos-retry').addEventListener('click', cargarDatos);
+  document.getElementById('canciones-retry').addEventListener('click', cargarDatos);
+  cargarDatos();
+});

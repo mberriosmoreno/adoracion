@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Alabanza y Adoración — Programa de los lunes, equipos y repertorio musical.">
+  <meta name="theme-color" content="#172554">
+  <title>Alabanza y Adoración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <div class="brand">
+        <!-- Icono de Notas Musicales -->
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="site-title">Alabanza y Adoración</h1>
+          <p class="site-subtitle">Programa del lunes · Equipos · Alabanza</p>
+        </div>
+      </div>
+
+      <div class="status" id="status" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span class="status-text" id="status-text">Cargando…</span>
+      </div>
+    </div>
+
+    <nav class="site-nav" aria-label="Navegación principal">
+      <div class="container nav-inner">
+        <button class="nav-btn is-active" data-view="programa" aria-controls="view-programa" aria-selected="true" role="tab">Programa del lunes</button>
+        <button class="nav-btn" data-view="equipos" aria-controls="view-equipos" aria-selected="false" role="tab">Equipos</button>
+        <button class="nav-btn" data-view="canciones" aria-controls="view-canciones" aria-selected="false" role="tab">Canciones</button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="contenido" class="container main" role="main">
+
+    <!-- Vista: Programa del lunes -->
+    <section id="view-programa" class="view" role="tabpanel" aria-labelledby="tab-programa">
+      <div class="loading-card" id="programa-loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Cargando el programa…</p>
+      </div>
+
+      <div class="error-card hidden" id="programa-error" role="alert">
+        <h2>No se pudo cargar el programa</h2>
+        <p id="programa-error-msg">Revisa tu conexión e inténtalo de nuevo.</p>
+        <button class="btn-retry" id="programa-retry">Volver a intentar</button>
+      </div>
+
+      <div class="empty-card hidden" id="programa-empty">
+        <h2>Todavía no hay un programa para el próximo lunes</h2>
+        <p>Cuando se registre el encuentro, aparecerá aquí automáticamente.</p>
+      </div>
+
+      <div class="hidden" id="programa-content">
+        <article class="hero-card">
+          <p class="hero-eyebrow" id="prog-eyebrow">Próximo encuentro</p>
+          <h2 class="hero-title" id="prog-nombre">—</h2>
+          <div class="hero-meta">
+            <div class="meta-item">
+              <span class="meta-label">Fecha</span>
+              <span class="meta-value" id="prog-fecha">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Hora</span>
+              <span class="meta-value" id="prog-hora">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Lugar</span>
+              <span class="meta-value" id="prog-lugar">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Estado</span>
+              <span class="badge" id="prog-estado">—</span>
+            </div>
+          </div>
+        </article>
+
+        <div class="grid-2">
+          <section class="card" aria-labelledby="prog-equipo-a-title">
+            <header class="card-header">
+              <h3 id="prog-equipo-a-title">Equipo A</h3>
+            </header>
+            <ul class="list" id="prog-equipo-a"></ul>
+          </section>
+
+          <section class="card" aria-labelledby="prog-equipo-b-title">
+            <header class="card-header">
+              <h3 id="prog-equipo-b-title">Equipo B</h3>
+            </header>
+            <ul class="list" id="prog-equipo-b"></ul>
+          </section>
+        </div>
+
+        <section class="card" aria-labelledby="prog-canciones-title">
+          <header class="card-header">
+            <h3 id="prog-canciones-title">Repertorio musical</h3>
+          </header>
+          <ol class="song-list" id="prog-canciones"></ol>
+        </section>
+      </div>
+    </section>
+
+    <!-- Vista: Equipos -->
+    <section id="view-equipos" class="view hidden" role="tabpanel" aria-labelledby="tab-equipos">
+      <div class="loading-card" id="equipos-loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Cargando los equipos…</p>
+      </div>
+
+      <div class="error-card hidden" id="equipos-error" role="alert">
+        <h2>No se pudieron cargar los equipos</h2>
+        <p id="equipos-error-msg">Revisa tu conexión e inténtalo de nuevo.</p>
+        <button class="btn-retry" id="equipos-retry">Volver a intentar</button>
+      </div>
+
+      <div class="empty-card hidden" id="equipos-empty">
+        <h2>Todavía no hay equipos asignados</h2>
+        <p>Cuando se registren integrantes para el próximo lunes, aparecerán aquí.</p>
+      </div>
+
+      <div class="hidden" id="equipos-content">
+        <p class="section-context" id="equipos-context"></p>
+        <div class="grid-2">
+          <section class="card" aria-labelledby="equipos-a-title">
+            <header class="card-header">
+              <h3 id="equipos-a-title">Equipo A</h3>
+            </header>
+            <ul class="list" id="equipos-a"></ul>
+          </section>
+          <section class="card" aria-labelledby="equipos-b-title">
+            <header class="card-header">
+              <h3 id="equipos-b-title">Equipo B</h3>
+            </header>
+            <ul class="list" id="equipos-b"></ul>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vista: Canciones -->
+    <section id="view-canciones" class="view hidden" role="tabpanel" aria-labelledby="tab-canciones">
+      <div class="loading-card" id="canciones-loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Cargando el repertorio…</p>
+      </div>
+
+      <div class="error-card hidden" id="canciones-error" role="alert">
+        <h2>No se pudo cargar el repertorio</h2>
+        <p id="canciones-error-msg">Revisa tu conexión e inténtalo de nuevo.</p>
+        <button class="btn-retry" id="canciones-retry">Volver a intentar</button>
+      </div>
+
+      <div class="empty-card hidden" id="canciones-empty">
+        <h2>Todavía no hay canciones programadas</h2>
+        <p>Cuando se registre el repertorio del próximo lunes, aparecerá aquí.</p>
+      </div>
+
+      <div class="hidden" id="canciones-content">
+        <p class="section-context" id="canciones-context"></p>
+        <section class="card" aria-labelledby="canciones-lista-title">
+          <header class="card-header">
+            <h3 id="canciones-lista-title">Repertorio en orden</h3>
+          </header>
+          <ol class="song-list" id="canciones-lista"></ol>
+        </section>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; <span id="footer-year"></span> Alabanza y Adoración. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
