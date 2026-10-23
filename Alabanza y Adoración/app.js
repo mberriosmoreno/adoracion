@@ -162,18 +162,56 @@ function renderCancionesEnLista(olId, idPrograma) {
   return true;
 }
 
-// ====== LÓGICA DE LA VENTANA MODAL ======
+// ====== LÓGICA DE LA VENTANA MODAL Y TRANSPOSICIÓN ======
 const modal = document.getElementById('modal-letra');
 const modalTitulo = document.getElementById('modal-titulo');
 const modalTono = document.getElementById('modal-tono');
 const modalTexto = document.getElementById('modal-letra-texto');
 const modalClose = document.getElementById('modal-close');
+const btnSubir = document.getElementById('btn-subir-tono');
+const btnBajar = document.getElementById('btn-bajar-tono');
+
+let letraOriginal = "";
+let tonoOriginal = "C";
+let semitonos = 0; // Contador de cambios
+
+const NOTAS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTAS_BEMOLES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+function transponerAcordes(texto, semitonos) {
+  // Busca acordes comunes (C, G, Am, F#m, etc.) que estén solos o entre corchetes
+  return texto.replace(/\b([A-G][#b]?m?(?:aj|dim|aug|sus|add)?[0-9]*)\b/g, (match) => {
+    let notaBase = match.charAt(0);
+    let alteracion = match.charAt(1) === '#' || match.charAt(1) === 'b' ? match.charAt(1) : '';
+    let sufijo = match.substring(1 + alteracion.length);
+    
+    let notaCompleta = notaBase + alteracion;
+    let index = NOTAS.indexOf(notaCompleta);
+    if (index === -1) index = NOTAS_BEMOLES.indexOf(notaCompleta);
+    
+    if (index !== -1) {
+      let nuevoIndex = (index + semitonos + 12) % 12;
+      return NOTAS[nuevoIndex] + sufijo; // Devolvemos en sostenidos para simplificar
+    }
+    return match;
+  });
+}
+
+function actualizarModal() {
+  modalTexto.innerHTML = transponerAcordes(letraOriginal, semitonos).replace(/\n/g, '<br>');
+  // Mostrar el tono actualizado (si es un acorde válido)
+  const tonoActual = transponerAcordes(tonoOriginal, semitonos);
+  modalTono.textContent = tonoActual;
+}
 
 function abrirModal(titulo, tono, letra) {
   if (!modal) return;
   modalTitulo.textContent = titulo;
-  modalTono.textContent = tono;
-  modalTexto.innerHTML = letra.replace(/\n/g, '<br>'); 
+  letraOriginal = letra;
+  tonoOriginal = tono || 'C';
+  semitonos = 0;
+  
+  actualizarModal();
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -190,6 +228,9 @@ document.getElementById('contenido').addEventListener('click', (e) => {
     abrirModal(btn.dataset.titulo, btn.dataset.tono, btn.dataset.letra);
   }
 });
+
+if(btnSubir) btnSubir.addEventListener('click', () => { semitonos++; actualizarModal(); });
+if(btnBajar) btnBajar.addEventListener('click', () => { semitonos--; actualizarModal(); });
 
 if(modalClose) modalClose.addEventListener('click', cerrarModal);
 if(modal) modal.addEventListener('click', (e) => { if (e.target === modal) cerrarModal(); });
