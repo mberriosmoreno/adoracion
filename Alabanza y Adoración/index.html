@@ -189,14 +189,22 @@
     </div>
   </footer>
 
-  <!-- Ventana Modal para la Letra -->
+  <!-- Ventana Modal para la Letra y Transposición -->
   <div id="modal-letra" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
     <div class="modal-content">
       <button class="modal-close" id="modal-close" aria-label="Cerrar">&times;</button>
       <h2 id="modal-titulo" class="modal-title">—</h2>
+      
+      <!-- Controles de Tono -->
       <div class="modal-meta">
+        <span class="meta-label" style="font-size: 0.85rem; color: var(--texto-suave); margin-right: 8px;">Tono:</span>
         <span id="modal-tono" class="song-key">—</span>
+        <div class="tono-controls">
+          <button id="btn-bajar-tono" class="btn-tono" aria-label="Bajar medio tono">-</button>
+          <button id="btn-subir-tono" class="btn-tono" aria-label="Subir medio tono">+</button>
+        </div>
       </div>
+      
       <div class="modal-body" id="modal-letra-texto"></div>
     </div>
   </div>
