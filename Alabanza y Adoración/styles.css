@@ -1,16 +1,31 @@
+/* ===== Alabanza y Adoración — Estilos (Tema Azul/Dorado) ===== */
 :root {
   --azul-profundo: #172554; --azul: #1e3a8a; --dorado: #eab308;
   --fondo: #f8fafc; --fondo-card: #ffffff; --texto: #0f172a; --texto-suave: #64748b; --borde: #e2e8f0;
   --error: #b3261e; --error-fondo: #fdecea; --sombra: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   --radio: 16px; --radio-sm: 12px; --trans: 200ms ease;
 }
+
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body { font-family: 'Inter', system-ui, sans-serif; background: var(--fondo); color: var(--texto); line-height: 1.55; }
+
+html, body { 
+  margin: 0; 
+  padding: 0; 
+  overflow-x: hidden; /* Evita scroll horizontal accidental */
+}
+
+body { 
+  font-family: 'Inter', system-ui, sans-serif; 
+  background: var(--fondo); 
+  color: var(--texto); 
+  line-height: 1.55; 
+}
+
 .container { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 20px; }
 .skip-link { position: absolute; left: -9999px; top: 0; background: var(--azul); color: #fff; padding: 10px 16px; z-index: 999; }
 .skip-link:focus { left: 0; }
 
+/* Header */
 .site-header { background: var(--azul-profundo); color: #fff; box-shadow: var(--sombra); }
 .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 24px; padding-bottom: 24px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 16px; }
@@ -26,12 +41,14 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--fondo); co
 .status.is-loading .status-dot { background: var(--dorado); animation: pulse 1.2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+/* Nav */
 .site-nav { background: rgba(0, 0, 0, 0.2); }
 .nav-inner { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; }
 .nav-btn { border: 0; background: transparent; color: rgba(255, 255, 255, 0.7); font: inherit; font-weight: 500; padding: 10px 16px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
 .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 .nav-btn.is-active { background: #fff; color: var(--azul-profundo); }
 
+/* Main */
 .main { padding-top: 32px; padding-bottom: 48px; min-height: 50vh; }
 .hidden { display: none !important; }
 .card, .hero-card, .loading-card, .error-card, .empty-card { background: var(--fondo-card); border: 1px solid var(--borde); border-radius: var(--radio); box-shadow: var(--sombra); padding: 24px; margin-bottom: 20px; }
@@ -73,3 +90,64 @@ body { font-family: 'Inter', system-ui, sans-serif; background: var(--fondo); co
 .section-context { margin-bottom: 16px; color: var(--texto-suave); border-bottom: 1px solid var(--borde); padding-bottom: 12px; }
 
 .site-footer { border-top: 1px solid var(--borde); background: var(--fondo-card); color: var(--texto-suave); text-align: center; padding: 24px 0; }
+
+/* Botones de Letra */
+.song-actions { display: flex; align-items: center; gap: 12px; }
+.btn-ver-letra { appearance: none; background: var(--fondo); border: 1px solid var(--borde); color: var(--azul-profundo); font: inherit; font-size: 0.85rem; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: all var(--trans); }
+.btn-ver-letra:hover { background: var(--azul-profundo); color: #fff; border-color: var(--azul-profundo); }
+
+/* ===== Modal (Ventana de Letra) ===== */
+.modal-overlay { 
+  position: fixed; 
+  top: 0; left: 0; right: 0; bottom: 0; 
+  background: rgba(15, 23, 42, 0.7); 
+  backdrop-filter: blur(4px); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 1000; 
+  padding: 20px; 
+}
+
+.modal-overlay.hidden {
+  display: none !important; /* Oculto estrictamente, sin bloquear scroll */
+}
+
+.modal-content { 
+  background: var(--fondo-card); 
+  width: 100%; 
+  max-width: 600px; 
+  max-height: 85vh; 
+  border-radius: var(--radio); 
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
+  display: flex; 
+  flex-direction: column; 
+  position: relative; 
+  overflow: hidden; 
+}
+
+.modal-close { 
+  position: absolute; 
+  top: 16px; 
+  right: 16px; 
+  background: transparent; 
+  border: 0; 
+  font-size: 1.8rem; 
+  color: var(--texto-suave); 
+  cursor: pointer; 
+  line-height: 1; 
+  padding: 4px; 
+  border-radius: 50%; 
+}
+.modal-close:hover { color: var(--texto); background: var(--fondo); }
+.modal-title { margin: 0; padding: 24px 24px 8px; font-size: 1.4rem; color: var(--azul-profundo); padding-right: 48px; }
+.modal-meta { padding: 0 24px 16px; border-bottom: 1px solid var(--borde); }
+.modal-body { 
+  padding: 24px; 
+  overflow-y: auto; 
+  font-family: 'Courier New', Courier, monospace; 
+  font-size: 0.95rem; 
+  white-space: pre-wrap; 
+  line-height: 1.6; 
+  color: var(--texto); 
+}
