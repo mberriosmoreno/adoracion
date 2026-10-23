@@ -1,7 +1,3 @@
-/* =========================================================
-   Alabanza y Adoración — frontend (Versión final)
-   ========================================================= */
-
 const API_URL = 'https://script.google.com/macros/s/AKfycbyWn0dsA-9gG16YLGzn7HLaNQIqRxLWh_n4xWn5VO2_IdS-tT074ckEYOb1xwFNLYeQGg/exec';
 
 const state = { data: null, cargado: false, error: null, programaActual: null };
@@ -53,12 +49,9 @@ async function cargarDatos() {
   }, 3000);
 
   try {
-    // NOTA: Se ha eliminado el parámetro ?t= para evitar bloqueos de CORS
     const resp = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
-    
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const json = await resp.json();
-    
     if (!json || json.ok !== true) throw new Error((json && json.error) || 'Respuesta inválida');
     
     const d = json.data || {};
@@ -169,6 +162,7 @@ function renderCancionesEnLista(olId, idPrograma) {
   return true;
 }
 
+// ====== LÓGICA DE LA VENTANA MODAL ======
 const modal = document.getElementById('modal-letra');
 const modalTitulo = document.getElementById('modal-titulo');
 const modalTono = document.getElementById('modal-tono');
@@ -176,6 +170,7 @@ const modalTexto = document.getElementById('modal-letra-texto');
 const modalClose = document.getElementById('modal-close');
 
 function abrirModal(titulo, tono, letra) {
+  if (!modal) return;
   modalTitulo.textContent = titulo;
   modalTono.textContent = tono;
   modalTexto.innerHTML = letra.replace(/\n/g, '<br>'); 
@@ -184,6 +179,7 @@ function abrirModal(titulo, tono, letra) {
 }
 
 function cerrarModal() {
+  if (!modal) return;
   modal.classList.add('hidden');
   document.body.style.overflow = '';
 }
