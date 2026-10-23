@@ -11,7 +11,7 @@
 html, body { 
   margin: 0; 
   padding: 0; 
-  overflow-x: hidden; /* Evita scroll horizontal accidental */
+  overflow-x: hidden;
 }
 
 body { 
@@ -110,7 +110,7 @@ body {
 }
 
 .modal-overlay.hidden {
-  display: none !important; /* Oculto estrictamente, sin bloquear scroll */
+  display: none !important;
 }
 
 .modal-content { 
@@ -141,7 +141,7 @@ body {
 }
 .modal-close:hover { color: var(--texto); background: var(--fondo); }
 .modal-title { margin: 0; padding: 24px 24px 8px; font-size: 1.4rem; color: var(--azul-profundo); padding-right: 48px; }
-.modal-meta { padding: 0 24px 16px; border-bottom: 1px solid var(--borde); }
+.modal-meta { padding: 0 24px 16px; border-bottom: 1px solid var(--borde); display: flex; align-items: center; }
 .modal-body { 
   padding: 24px; 
   overflow-y: auto; 
@@ -150,4 +150,33 @@ body {
   white-space: pre-wrap; 
   line-height: 1.6; 
   color: var(--texto); 
+}
+
+/* ===== Controles de Tono (Modal) ===== */
+.tono-controls {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: 16px;
+  vertical-align: middle;
+}
+
+.btn-tono {
+  appearance: none;
+  background: var(--azul-profundo);
+  color: #fff;
+  border: 0;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--trans);
+}
+
+.btn-tono:hover {
+  background: var(--azul);
 }
