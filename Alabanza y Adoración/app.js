@@ -19,14 +19,12 @@ const MESES = [
 // =====================================================
 
 function hoyEnNicaragua() {
-  const ahora = new Date();
-
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Managua',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
-  }).format(ahora);
+  }).format(new Date());
 }
 
 function fechaISOaLocal(iso) {
@@ -36,7 +34,6 @@ function fechaISOaLocal(iso) {
 
 function formatearFechaLarga(iso) {
   const d = fechaISOaLocal(iso);
-
   return `${capitalizar(DIAS[d.getDay()])} ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
@@ -45,19 +42,14 @@ function capitalizar(s) {
 }
 
 function proximoLunesISO() {
-  const hoyISO = hoyEnNicaragua();
-  const hoy = fechaISOaLocal(hoyISO);
-  const dia = hoy.getDay();
+  const hoy = fechaISOaLocal(hoyEnNicaragua());
+  const delta = (1 - hoy.getDay() + 7) % 7;
 
-  const delta = (1 - dia + 7) % 7;
-
-  const prox = new Date(
+  return toISO(new Date(
     hoy.getFullYear(),
     hoy.getMonth(),
     hoy.getDate() + delta
-  );
-
-  return toISO(prox);
+  ));
 }
 
 function toISO(d) {
@@ -75,7 +67,6 @@ function seleccionarPrograma(programas) {
   const proxLun = proximoLunesISO();
 
   const activos = programas.filter(p => p.Estado !== 'Cancelado');
-
   const exacto = activos.find(p => p.Fecha === proxLun);
 
   if (exacto) return exacto;
@@ -102,7 +93,7 @@ function setStatus(kind, text) {
 }
 
 // =====================================================
-// CARGAR DATOS DESDE GOOGLE SHEETS
+// CARGAR DATOS
 // =====================================================
 
 async function cargarDatos() {
@@ -134,8 +125,6 @@ async function cargarDatos() {
       throw new Error((json && json.error) || 'Respuesta inválida');
     }
 
-    // CORRECCIÓN PRINCIPAL:
-    // La API entrega los registros dentro de json.data.
     const d = json.data || json;
 
     state.data = {
@@ -146,20 +135,15 @@ async function cargarDatos() {
 
     console.log('Datos recibidos:', state.data);
 
-    console.log(
-      'Enlaces de YouTube recibidos:',
-      state.data.canciones.map(c => ({
-        cancion: c.Titulo_cancion,
-        enlace: c.Link_YouTube
-      }))
-    );
+    console.table(state.data.canciones.map(c => ({
+      cancion: c.Titulo_cancion,
+      enlace: obtenerCampoYouTube(c),
+      enlaceValido: obtenerUrlYouTube(obtenerCampoYouTube(c))
+    })));
 
     state.error = null;
     state.cargado = true;
-
-    state.programaActual = seleccionarPrograma(
-      state.data.programas
-    );
+    state.programaActual = seleccionarPrograma(state.data.programas);
 
     setStatus('ok', 'Actualizado');
 
@@ -174,15 +158,6 @@ async function cargarDatos() {
 
   } finally {
     clearTimeout(timerAviso);
-
-    document.querySelectorAll('.loading-card p').forEach((t, i) => {
-      t.textContent = [
-        'Cargando el programa…',
-        'Cargando los equipos…',
-        'Cargando el repertorio…'
-      ][i];
-    });
-
     renderTodo();
   }
 }
@@ -219,15 +194,13 @@ function mostrarSolo(vista, estado) {
     ]
   };
 
-  const [ld, er, em, ct] = ids[vista].map(id =>
-    document.getElementById(id)
-  );
+  if (!ids[vista]) return;
 
-  if (!ld || !er || !em || !ct) return;
+  const elementos = ids[vista].map(id => document.getElementById(id));
 
-  [ld, er, em, ct].forEach(el =>
-    el.classList.add('hidden')
-  );
+  if (elementos.some(el => !el)) return;
+
+  elementos.forEach(el => el.classList.add('hidden'));
 
   const indice = {
     loading: 0,
@@ -236,10 +209,8 @@ function mostrarSolo(vista, estado) {
     content: 3
   }[estado];
 
-  const target = [ld, er, em, ct][indice];
-
-  if (target) {
-    target.classList.remove('hidden');
+  if (indice !== undefined) {
+    elementos[indice].classList.remove('hidden');
   }
 }
 
@@ -254,7 +225,8 @@ function renderPrograma() {
   }
 
   if (state.error) {
-    document.getElementById('programa-error-msg').textContent = state.error;
+    const error = document.getElementById('programa-error-msg');
+    if (error) error.textContent = state.error;
     mostrarSolo('programa', 'error');
     return;
   }
@@ -266,29 +238,30 @@ function renderPrograma() {
     return;
   }
 
-  document.getElementById('prog-nombre').textContent =
-    prog.Nombre_encuentro || 'Encuentro';
+  const asignaciones = {
+    'prog-nombre': prog.Nombre_encuentro || 'Encuentro',
+    'prog-fecha': formatearFechaLarga(prog.Fecha),
+    'prog-hora': prog.Hora || '—',
+    'prog-lugar': prog.Lugar || '—'
+  };
 
-  document.getElementById('prog-fecha').textContent =
-    formatearFechaLarga(prog.Fecha);
-
-  document.getElementById('prog-hora').textContent =
-    prog.Hora || '—';
-
-  document.getElementById('prog-lugar').textContent =
-    prog.Lugar || '—';
+  Object.entries(asignaciones).forEach(([id, valor]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = valor;
+  });
 
   const badge = document.getElementById('prog-estado');
 
-  badge.textContent = prog.Estado || '—';
-
-  badge.className = 'badge ' + (
-    prog.Estado === 'Confirmado'
-      ? 'is-confirmado'
-      : prog.Estado === 'Cancelado'
-        ? 'is-cancelado'
-        : ''
-  );
+  if (badge) {
+    badge.textContent = prog.Estado || '—';
+    badge.className = 'badge ' + (
+      prog.Estado === 'Confirmado'
+        ? 'is-confirmado'
+        : prog.Estado === 'Cancelado'
+          ? 'is-cancelado'
+          : ''
+    );
+  }
 
   renderEquipoEnLista('prog-equipo-a', 'A', prog.ID_programa);
   renderEquipoEnLista('prog-equipo-b', 'B', prog.ID_programa);
@@ -308,7 +281,8 @@ function renderEquipos() {
   }
 
   if (state.error) {
-    document.getElementById('equipos-error-msg').textContent = state.error;
+    const error = document.getElementById('equipos-error-msg');
+    if (error) error.textContent = state.error;
     mostrarSolo('equipos', 'error');
     return;
   }
@@ -320,8 +294,12 @@ function renderEquipos() {
     return;
   }
 
-  document.getElementById('equipos-context').textContent =
-    `Encuentro: ${prog.Nombre_encuentro} · ${formatearFechaLarga(prog.Fecha)} · ${prog.Hora || ''} · ${prog.Lugar || ''}`.trim();
+  const contexto = document.getElementById('equipos-context');
+
+  if (contexto) {
+    contexto.textContent =
+      `Encuentro: ${prog.Nombre_encuentro} · ${formatearFechaLarga(prog.Fecha)} · ${prog.Hora || ''} · ${prog.Lugar || ''}`.trim();
+  }
 
   renderEquipoEnLista('equipos-a', 'A', prog.ID_programa);
   renderEquipoEnLista('equipos-b', 'B', prog.ID_programa);
@@ -331,12 +309,11 @@ function renderEquipos() {
 
 function renderEquipoEnLista(ulId, equipo, idPrograma) {
   const ul = document.getElementById(ulId);
-
   if (!ul) return;
 
   ul.innerHTML = '';
 
-  const miembros = (state.data.equipos || [])
+  const miembros = (state.data?.equipos || [])
     .filter(e =>
       String(e.ID_programa).trim() === String(idPrograma).trim() &&
       String(e.Equipo).trim() === equipo
@@ -359,9 +336,7 @@ function renderEquipoEnLista(ulId, equipo, idPrograma) {
     funcion.className = 'funcion';
     funcion.textContent = m.Funcion_o_instrumento || '';
 
-    li.appendChild(persona);
-    li.appendChild(funcion);
-
+    li.append(persona, funcion);
     ul.appendChild(li);
   });
 }
@@ -377,7 +352,8 @@ function renderCanciones() {
   }
 
   if (state.error) {
-    document.getElementById('canciones-error-msg').textContent = state.error;
+    const error = document.getElementById('canciones-error-msg');
+    if (error) error.textContent = state.error;
     mostrarSolo('canciones', 'error');
     return;
   }
@@ -389,24 +365,20 @@ function renderCanciones() {
     return;
   }
 
-  document.getElementById('canciones-context').textContent =
-    `Encuentro: ${prog.Nombre_encuentro} · ${formatearFechaLarga(prog.Fecha)}`.trim();
+  const contexto = document.getElementById('canciones-context');
 
-  const hay = renderCancionesEnLista(
-    'canciones-lista',
-    prog.ID_programa
-  );
-
-  if (!hay) {
-    mostrarSolo('canciones', 'empty');
-    return;
+  if (contexto) {
+    contexto.textContent =
+      `Encuentro: ${prog.Nombre_encuentro} · ${formatearFechaLarga(prog.Fecha)}`;
   }
 
-  mostrarSolo('canciones', 'content');
+  const hay = renderCancionesEnLista('canciones-lista', prog.ID_programa);
+
+  mostrarSolo('canciones', hay ? 'content' : 'empty');
 }
 
 // =====================================================
-// FUNCIONES PARA LOS ENLACES DE YOUTUBE
+// YOUTUBE
 // =====================================================
 
 function obtenerCampoYouTube(cancion) {
@@ -416,9 +388,7 @@ function obtenerCampoYouTube(cancion) {
     key => key.trim().toLowerCase() === 'link_youtube'
   );
 
-  return campo
-    ? String(cancion[campo] || '').trim()
-    : '';
+  return campo ? String(cancion[campo] || '').trim() : '';
 }
 
 function obtenerUrlYouTube(url) {
@@ -434,43 +404,35 @@ function obtenerUrlYouTube(url) {
     }
 
     const enlace = new URL(texto);
-
-    const dominio = enlace.hostname
-      .toLowerCase()
-      .replace(/^www\./, '');
+    const dominio = enlace.hostname.toLowerCase().replace(/^www\./, '');
 
     const esYouTube =
       dominio === 'youtube.com' ||
       dominio.endsWith('.youtube.com') ||
       dominio === 'youtu.be';
 
-    if (!esYouTube) {
-      console.warn('Enlace no reconocido como YouTube:', texto);
-      return '';
-    }
+    if (!esYouTube) return '';
 
     enlace.protocol = 'https:';
-
     return enlace.href;
 
   } catch (error) {
-    console.warn('No se pudo interpretar el enlace:', url);
+    console.warn('Enlace de YouTube inválido:', url);
     return '';
   }
 }
 
 // =====================================================
-// RENDERIZADO DE CANCIONES Y ENLACES
+// LISTA DE CANCIONES
 // =====================================================
 
 function renderCancionesEnLista(olId, idPrograma) {
   const ol = document.getElementById(olId);
-
   if (!ol) return false;
 
   ol.innerHTML = '';
 
-  const canciones = (state.data.canciones || [])
+  const canciones = (state.data?.canciones || [])
     .filter(c =>
       String(c.ID_programa).trim() === String(idPrograma).trim()
     )
@@ -510,10 +472,9 @@ function renderCancionesEnLista(olId, idPrograma) {
     const tono = document.createElement('span');
     tono.className = 'song-key';
     tono.textContent = c.Tonalidad || '—';
-
     acciones.appendChild(tono);
 
-    // Botón VER LETRA
+    // VER LETRA: se muestra solamente si hay contenido.
     if (c.Notas && String(c.Notas).trim() !== '') {
       const boton = document.createElement('button');
 
@@ -529,15 +490,9 @@ function renderCancionesEnLista(olId, idPrograma) {
       acciones.appendChild(boton);
     }
 
-    // ENLACE DIRECTO A YOUTUBE
+    // YOUTUBE: independiente de la existencia de letra.
     const enlaceOriginal = obtenerCampoYouTube(c);
     const enlaceValido = obtenerUrlYouTube(enlaceOriginal);
-
-    console.log(
-      'Diagnóstico YouTube:',
-      c.Titulo_cancion,
-      enlaceValido || 'SIN ENLACE VÁLIDO'
-    );
 
     if (enlaceValido) {
       const youtube = document.createElement('a');
@@ -556,10 +511,7 @@ function renderCancionesEnLista(olId, idPrograma) {
       acciones.appendChild(youtube);
     }
 
-    li.appendChild(numero);
-    li.appendChild(informacion);
-    li.appendChild(acciones);
-
+    li.append(numero, informacion, acciones);
     ol.appendChild(li);
   });
 
@@ -596,17 +548,17 @@ const NOTAS_BEMOLES = [
 
 function transponerAcordes(texto, semitonos) {
   return texto.replace(
-    /\b([A-G][#b]?m?(?:aj|dim|aug|sus|add)?[0-9]*)\b/g,
-    (match) => {
-      let notaBase = match.charAt(0);
+    /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add)?[0-9]*)\b/g,
+    match => {
+      const notaBase = match.charAt(0);
 
-      let alteracion =
+      const alteracion =
         match.charAt(1) === '#' || match.charAt(1) === 'b'
           ? match.charAt(1)
           : '';
 
-      let sufijo = match.substring(1 + alteracion.length);
-      let notaCompleta = notaBase + alteracion;
+      const sufijo = match.substring(1 + alteracion.length);
+      const notaCompleta = notaBase + alteracion;
 
       let index = NOTAS.indexOf(notaCompleta);
 
@@ -614,13 +566,10 @@ function transponerAcordes(texto, semitonos) {
         index = NOTAS_BEMOLES.indexOf(notaCompleta);
       }
 
-      if (index !== -1) {
-        let nuevoIndex = (index + semitonos + 12) % 12;
+      if (index === -1) return match;
 
-        return NOTAS[nuevoIndex] + sufijo;
-      }
-
-      return match;
+      const nuevoIndex = (index + semitonos + 120) % 12;
+      return NOTAS[nuevoIndex] + sufijo;
     }
   );
 }
@@ -628,23 +577,19 @@ function transponerAcordes(texto, semitonos) {
 function actualizarModal() {
   if (!modalTexto || !modalTono) return;
 
-  modalTexto.innerHTML = transponerAcordes(
-    letraOriginal,
-    semitonos
-  ).replace(/\n/g, '<br>');
+  // Se usa textContent para evitar interpretar el texto de la letra como HTML.
+  modalTexto.textContent = transponerAcordes(letraOriginal, semitonos);
 
-  const tonoActual = transponerAcordes(
+  modalTono.textContent = transponerAcordes(
     tonoOriginal,
     semitonos
   );
-
-  modalTono.textContent = tonoActual;
 }
 
 function abrirModal(titulo, tono, letra, urlYouTube) {
   if (!modal) return;
 
-  modalTitulo.textContent = titulo;
+  if (modalTitulo) modalTitulo.textContent = titulo;
 
   letraOriginal = letra || '';
   tonoOriginal = tono || 'C';
@@ -665,6 +610,7 @@ function abrirModal(titulo, tono, letra, urlYouTube) {
   }
 
   modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
 }
 
@@ -672,28 +618,31 @@ function cerrarModal() {
   if (!modal) return;
 
   modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
 }
 
-// Abrir letra
-const contenido = document.getElementById('contenido');
+document.addEventListener('click', e => {
+  const boton = e.target.closest('.btn-ver-letra');
 
-if (contenido) {
-  contenido.addEventListener('click', (e) => {
-    const boton = e.target.closest('.btn-ver-letra');
-
-    if (!boton) return;
-
+  if (boton) {
     abrirModal(
       boton.dataset.titulo,
       boton.dataset.tono,
       boton.dataset.letra,
       boton.dataset.youtube
     );
-  });
-}
+  }
 
-// Subir tono
+  if (e.target.closest('#modal-close')) {
+    cerrarModal();
+  }
+
+  if (e.target === modal) {
+    cerrarModal();
+  }
+});
+
 if (btnSubir) {
   btnSubir.addEventListener('click', () => {
     semitonos++;
@@ -701,7 +650,6 @@ if (btnSubir) {
   });
 }
 
-// Bajar tono
 if (btnBajar) {
   btnBajar.addEventListener('click', () => {
     semitonos--;
@@ -709,25 +657,8 @@ if (btnBajar) {
   });
 }
 
-// Cerrar modal
-if (modalClose) {
-  modalClose.addEventListener('click', cerrarModal);
-}
-
-if (modal) {
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      cerrarModal();
-    }
-  });
-}
-
-document.addEventListener('keydown', (e) => {
-  if (
-    e.key === 'Escape' &&
-    modal &&
-    !modal.classList.contains('hidden')
-  ) {
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
     cerrarModal();
   }
 });
@@ -741,20 +672,14 @@ function activarVista(nombre) {
     const activa = btn.dataset.view === nombre;
 
     btn.classList.toggle('is-active', activa);
-
-    btn.setAttribute(
-      'aria-selected',
-      activa ? 'true' : 'false'
-    );
+    btn.setAttribute('aria-selected', activa ? 'true' : 'false');
   });
 
   document.querySelectorAll('.view').forEach(vista => {
     vista.classList.add('hidden');
   });
 
-  const vistaSeleccionada = document.getElementById(
-    'view-' + nombre
-  );
+  const vistaSeleccionada = document.getElementById('view-' + nombre);
 
   if (vistaSeleccionada) {
     vistaSeleccionada.classList.remove('hidden');
@@ -762,7 +687,7 @@ function activarVista(nombre) {
 }
 
 // =====================================================
-// INICIO DE LA APLICACIÓN
+// INICIO
 // =====================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -778,21 +703,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const programaRetry = document.getElementById('programa-retry');
-  const equiposRetry = document.getElementById('equipos-retry');
-  const cancionesRetry = document.getElementById('canciones-retry');
+  [
+    'programa-retry',
+    'equipos-retry',
+    'canciones-retry'
+  ].forEach(id => {
+    const boton = document.getElementById(id);
 
-  if (programaRetry) {
-    programaRetry.addEventListener('click', cargarDatos);
-  }
-
-  if (equiposRetry) {
-    equiposRetry.addEventListener('click', cargarDatos);
-  }
-
-  if (cancionesRetry) {
-    cancionesRetry.addEventListener('click', cargarDatos);
-  }
+    if (boton) {
+      boton.addEventListener('click', cargarDatos);
+    }
+  });
 
   cargarDatos();
 });
