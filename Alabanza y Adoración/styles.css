@@ -464,7 +464,7 @@ body {
   border-color: var(--azul-profundo);
 }
 
-/* ===== Enlace directo de YouTube en cada canción ===== */
+/* Enlace directo de YouTube en cada canción */
 
 .youtube-song-link {
   display: inline-flex;
@@ -495,7 +495,7 @@ body {
   outline-offset: 3px;
 }
 
-/* ===== Modal (Ventana de Letra) ===== */
+/* Modal: ventana de letra */
 
 .modal-overlay {
   position: fixed;
@@ -573,7 +573,7 @@ body {
   color: var(--texto);
 }
 
-/* ===== Controles de tono (Modal) ===== */
+/* Controles de tono */
 
 .tono-controls {
   display: inline-flex;
@@ -601,39 +601,6 @@ body {
 
 .btn-tono:hover {
   background: var(--azul);
-}
-
-/* ===== Enlace de YouTube en la ventana modal ===== */
-
-.youtube-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: flex-start;
-  gap: 8px;
-  margin: 0 24px 24px;
-  padding: 11px 16px;
-  border-radius: 8px;
-  background: #fee2e2;
-  color: #b91c1c;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background var(--trans), transform var(--trans);
-}
-
-.youtube-link:hover {
-  background: #fecaca;
-  transform: translateY(-1px);
-}
-
-.youtube-link:focus-visible {
-  outline: 3px solid var(--dorado);
-  outline-offset: 3px;
-}
-
-.youtube-link.hidden {
-  display: none !important;
 }
 
 /* Ajustes para pantallas pequeñas */
