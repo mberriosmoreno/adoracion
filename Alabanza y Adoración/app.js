@@ -474,7 +474,7 @@ function renderCancionesEnLista(olId, idPrograma) {
     tono.textContent = c.Tonalidad || '—';
     acciones.appendChild(tono);
 
-    // VER LETRA: se muestra solamente si hay contenido.
+    // VER LETRA: solamente cuando hay contenido.
     if (c.Notas && String(c.Notas).trim() !== '') {
       const boton = document.createElement('button');
 
@@ -485,12 +485,11 @@ function renderCancionesEnLista(olId, idPrograma) {
       boton.dataset.titulo = c.Titulo_cancion || '';
       boton.dataset.tono = c.Tonalidad || 'C';
       boton.dataset.letra = c.Notas || '';
-      boton.dataset.youtube = obtenerCampoYouTube(c);
 
       acciones.appendChild(boton);
     }
 
-    // YOUTUBE: independiente de la existencia de letra.
+    // YOUTUBE: aparece exclusivamente en el repertorio.
     const enlaceOriginal = obtenerCampoYouTube(c);
     const enlaceValido = obtenerUrlYouTube(enlaceOriginal);
 
@@ -526,8 +525,6 @@ const modal = document.getElementById('modal-letra');
 const modalTitulo = document.getElementById('modal-titulo');
 const modalTono = document.getElementById('modal-tono');
 const modalTexto = document.getElementById('modal-letra-texto');
-const modalClose = document.getElementById('modal-close');
-const modalYouTube = document.getElementById('modal-youtube');
 
 const btnSubir = document.getElementById('btn-subir-tono');
 const btnBajar = document.getElementById('btn-bajar-tono');
@@ -577,8 +574,10 @@ function transponerAcordes(texto, semitonos) {
 function actualizarModal() {
   if (!modalTexto || !modalTono) return;
 
-  // Se usa textContent para evitar interpretar el texto de la letra como HTML.
-  modalTexto.textContent = transponerAcordes(letraOriginal, semitonos);
+  modalTexto.textContent = transponerAcordes(
+    letraOriginal,
+    semitonos
+  );
 
   modalTono.textContent = transponerAcordes(
     tonoOriginal,
@@ -586,28 +585,18 @@ function actualizarModal() {
   );
 }
 
-function abrirModal(titulo, tono, letra, urlYouTube) {
+function abrirModal(titulo, tono, letra) {
   if (!modal) return;
 
-  if (modalTitulo) modalTitulo.textContent = titulo;
+  if (modalTitulo) {
+    modalTitulo.textContent = titulo;
+  }
 
   letraOriginal = letra || '';
   tonoOriginal = tono || 'C';
   semitonos = 0;
 
   actualizarModal();
-
-  const enlaceValido = obtenerUrlYouTube(urlYouTube);
-
-  if (modalYouTube) {
-    if (enlaceValido) {
-      modalYouTube.href = enlaceValido;
-      modalYouTube.classList.remove('hidden');
-    } else {
-      modalYouTube.removeAttribute('href');
-      modalYouTube.classList.add('hidden');
-    }
-  }
 
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
@@ -629,8 +618,7 @@ document.addEventListener('click', e => {
     abrirModal(
       boton.dataset.titulo,
       boton.dataset.tono,
-      boton.dataset.letra,
-      boton.dataset.youtube
+      boton.dataset.letra
     );
   }
 
