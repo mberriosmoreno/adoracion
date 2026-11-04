@@ -6,11 +6,14 @@
   <meta name="description" content="Alabanza y Adoración — Programa de los lunes, equipos y repertorio musical.">
   <meta name="theme-color" content="#172554">
   <title>Alabanza y Adoración</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
@@ -24,6 +27,7 @@
             <circle cx="18" cy="16" r="3"></circle>
           </svg>
         </div>
+
         <div class="brand-text">
           <h1 class="site-title">Alabanza y Adoración</h1>
           <p class="site-subtitle">Programa del lunes · Equipos · Alabanza</p>
@@ -47,8 +51,8 @@
 
   <main id="contenido" class="container main" role="main">
 
-    <!-- Vista: Programa del lunes -->
-    <section id="view-programa" class="view" role="tabpanel" aria-labelledby="tab-programa">
+    <!-- VISTA: PROGRAMA DEL LUNES -->
+    <section id="view-programa" class="view" role="tabpanel">
       <div class="loading-card" id="programa-loading">
         <div class="spinner" aria-hidden="true"></div>
         <p>Cargando el programa…</p>
@@ -69,19 +73,23 @@
         <article class="hero-card">
           <p class="hero-eyebrow" id="prog-eyebrow">Próximo encuentro</p>
           <h2 class="hero-title" id="prog-nombre">—</h2>
+
           <div class="hero-meta">
             <div class="meta-item">
               <span class="meta-label">Fecha</span>
               <span class="meta-value" id="prog-fecha">—</span>
             </div>
+
             <div class="meta-item">
               <span class="meta-label">Hora</span>
               <span class="meta-value" id="prog-hora">—</span>
             </div>
+
             <div class="meta-item">
               <span class="meta-label">Lugar</span>
               <span class="meta-value" id="prog-lugar">—</span>
             </div>
+
             <div class="meta-item">
               <span class="meta-label">Estado</span>
               <span class="badge" id="prog-estado">—</span>
@@ -114,8 +122,8 @@
       </div>
     </section>
 
-    <!-- Vista: Equipos -->
-    <section id="view-equipos" class="view hidden" role="tabpanel" aria-labelledby="tab-equipos">
+    <!-- VISTA: EQUIPOS -->
+    <section id="view-equipos" class="view hidden" role="tabpanel">
       <div class="loading-card" id="equipos-loading">
         <div class="spinner" aria-hidden="true"></div>
         <p>Cargando los equipos…</p>
@@ -134,6 +142,7 @@
 
       <div class="hidden" id="equipos-content">
         <p class="section-context" id="equipos-context"></p>
+
         <div class="grid-2">
           <section class="card" aria-labelledby="equipos-a-title">
             <header class="card-header">
@@ -141,6 +150,7 @@
             </header>
             <ul class="list" id="equipos-a"></ul>
           </section>
+
           <section class="card" aria-labelledby="equipos-b-title">
             <header class="card-header">
               <h3 id="equipos-b-title">Equipo B</h3>
@@ -151,8 +161,8 @@
       </div>
     </section>
 
-    <!-- Vista: Canciones -->
-    <section id="view-canciones" class="view hidden" role="tabpanel" aria-labelledby="tab-canciones">
+    <!-- VISTA: CANCIONES -->
+    <section id="view-canciones" class="view hidden" role="tabpanel">
       <div class="loading-card" id="canciones-loading">
         <div class="spinner" aria-hidden="true"></div>
         <p>Cargando el repertorio…</p>
@@ -171,6 +181,7 @@
 
       <div class="hidden" id="canciones-content">
         <p class="section-context" id="canciones-context"></p>
+
         <section class="card" aria-labelledby="canciones-lista-title">
           <header class="card-header">
             <h3 id="canciones-lista-title">Repertorio en orden</h3>
@@ -188,18 +199,28 @@
     </div>
   </footer>
 
-  <!-- Ventana Modal para la Letra, Transposición y enlace de YouTube -->
-  <div id="modal-letra" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+  <!-- MODAL: LETRA, TRANSPOSICIÓN Y YOUTUBE -->
+  <div
+    id="modal-letra"
+    class="modal-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-titulo"
+    aria-hidden="true"
+  >
     <div class="modal-content">
-      <button class="modal-close" id="modal-close" aria-label="Cerrar">&times;</button>
+      <button class="modal-close" id="modal-close" type="button" aria-label="Cerrar">&times;</button>
+
       <h2 id="modal-titulo" class="modal-title">—</h2>
 
       <div class="modal-meta">
         <span class="meta-label" style="font-size: 0.85rem; color: var(--texto-suave); margin-right: 8px;">Tono:</span>
+
         <span id="modal-tono" class="song-key">—</span>
+
         <div class="tono-controls">
-          <button id="btn-bajar-tono" class="btn-tono" aria-label="Bajar medio tono">-</button>
-          <button id="btn-subir-tono" class="btn-tono" aria-label="Subir medio tono">+</button>
+          <button id="btn-bajar-tono" class="btn-tono" type="button" aria-label="Bajar medio tono">-</button>
+          <button id="btn-subir-tono" class="btn-tono" type="button" aria-label="Subir medio tono">+</button>
         </div>
       </div>
 
@@ -217,7 +238,8 @@
     </div>
   </div>
 
-  <!-- Archivo JavaScript -->
-  <script src="script.js" defer></script>
+  <!-- ARCHIVO JAVASCRIPT -->
+  <script src="app.js" defer></script>
+
 </body>
 </html>
