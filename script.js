@@ -398,6 +398,22 @@ function renderCancionesEnLista(olId, idPrograma) {
       acciones.appendChild(boton);
     }
 
+    // Enlace directo a YouTube junto a los botones de cada canción
+    const enlaceValido = obtenerUrlYouTube(c.Link_YouTube);
+
+    if (enlaceValido) {
+      const youtube = document.createElement('a');
+
+      youtube.className = 'youtube-song-link';
+      youtube.href = enlaceValido;
+      youtube.target = '_blank';
+      youtube.rel = 'noopener noreferrer';
+      youtube.textContent = '▶ YouTube';
+      youtube.setAttribute('aria-label', 'Abrir canción en YouTube');
+
+      acciones.appendChild(youtube);
+    }
+
     li.appendChild(numero);
     li.appendChild(informacion);
     li.appendChild(acciones);
@@ -527,7 +543,7 @@ function cerrarModal() {
   document.body.style.overflow = '';
 }
 
-// Abrir la letra y cargar el enlace de YouTube correspondiente
+// Abrir la letra de la canción seleccionada
 document.getElementById('contenido').addEventListener('click', (e) => {
   const boton = e.target.closest('.btn-ver-letra');
 
