@@ -124,6 +124,9 @@ async function cargarDatos() {
       canciones: d.canciones || []
     };
 
+    // Diagnóstico: permite comprobar qué enlaces llegan desde Google Sheets.
+    console.log('Canciones recibidas desde Google Sheets:', state.data.canciones);
+
     state.error = null;
     state.cargado = true;
     state.programaActual = seleccionarPrograma(state.data.programas);
@@ -131,6 +134,8 @@ async function cargarDatos() {
     setStatus('ok', 'Actualizado');
 
   } catch (err) {
+    console.error('Error al cargar los datos:', err);
+
     state.error = err.message || 'Error desconocido';
     state.cargado = true;
     state.programaActual = null;
@@ -278,8 +283,11 @@ function renderEquipoEnLista(ulId, equipo, idPrograma) {
   ul.innerHTML = '';
 
   const miembros = (state.data.equipos || [])
-    .filter(e => e.ID_programa === idPrograma && e.Equipo === equipo)
-    .sort((a, b) => a.Orden - b.Orden);
+    .filter(e =>
+      String(e.ID_programa).trim() === String(idPrograma).trim() &&
+      String(e.Equipo).trim() === equipo
+    )
+    .sort((a, b) => Number(a.Orden) - Number(b.Orden));
 
   if (!miembros.length) {
     ul.innerHTML = '<li class="empty-msg">Sin integrantes asignados</li>';
@@ -335,6 +343,71 @@ function renderCanciones() {
   mostrarSolo('canciones', 'content');
 }
 
+/* =====================================================
+   FUNCIONES PARA LOS ENLACES DE YOUTUBE
+===================================================== */
+
+// Lee el enlace aunque el nombre del campo venga con
+// una variación de mayúsculas o un nombre alternativo.
+function obtenerCampoYouTube(cancion) {
+  if (!cancion) return '';
+
+  return (
+    cancion.Link_YouTube ||
+    cancion.link_youtube ||
+    cancion.LINK_YOUTUBE ||
+    cancion.URL_YouTube ||
+    cancion.Url_YouTube ||
+    cancion.youtube ||
+    ''
+  ).toString().trim();
+}
+
+// Acepta enlaces habituales de YouTube y los normaliza.
+function obtenerUrlYouTube(url) {
+  if (!url) return '';
+
+  try {
+    let texto = String(url).trim();
+
+    if (!texto) return '';
+
+    // Si la celda contiene solo el enlace sin protocolo.
+    if (!/^https?:\/\//i.test(texto)) {
+      texto = 'https://' + texto.replace(/^\/+/, '');
+    }
+
+    const enlace = new URL(texto);
+
+    const dominio = enlace.hostname
+      .toLowerCase()
+      .replace(/^www\./, '');
+
+    const esYouTube =
+      dominio === 'youtube.com' ||
+      dominio.endsWith('.youtube.com') ||
+      dominio === 'youtu.be';
+
+    if (!esYouTube) {
+      console.warn('El enlace no pertenece a YouTube:', texto);
+      return '';
+    }
+
+    // Los enlaces se abren mediante HTTPS.
+    enlace.protocol = 'https:';
+
+    return enlace.href;
+
+  } catch (error) {
+    console.warn('No se pudo interpretar el enlace de YouTube:', url);
+    return '';
+  }
+}
+
+/* =====================================================
+   RENDERIZADO DE LAS CANCIONES
+===================================================== */
+
 function renderCancionesEnLista(olId, idPrograma) {
   const ol = document.getElementById(olId);
 
@@ -343,8 +416,10 @@ function renderCancionesEnLista(olId, idPrograma) {
   ol.innerHTML = '';
 
   const canciones = (state.data.canciones || [])
-    .filter(c => c.ID_programa === idPrograma)
-    .sort((a, b) => a.Orden - b.Orden);
+    .filter(c =>
+      String(c.ID_programa).trim() === String(idPrograma).trim()
+    )
+    .sort((a, b) => Number(a.Orden) - Number(b.Orden));
 
   if (!canciones.length) {
     ol.innerHTML = '<li class="empty-msg">Sin canciones programadas</li>';
@@ -354,11 +429,13 @@ function renderCancionesEnLista(olId, idPrograma) {
   canciones.forEach(c => {
     const li = document.createElement('li');
 
+    // Número de canción
     const numero = document.createElement('span');
     numero.className = 'song-num';
     numero.setAttribute('aria-hidden', 'true');
-    numero.textContent = c.Orden;
+    numero.textContent = c.Orden || '';
 
+    // Información de la canción
     const informacion = document.createElement('div');
 
     const titulo = document.createElement('div');
@@ -374,16 +451,20 @@ function renderCancionesEnLista(olId, idPrograma) {
       informacion.appendChild(artista);
     }
 
+    // Contenedor de acciones
     const acciones = document.createElement('div');
     acciones.className = 'song-actions';
 
+    // Tonalidad
     const tono = document.createElement('span');
     tono.className = 'song-key';
     tono.textContent = c.Tonalidad || '—';
 
     acciones.appendChild(tono);
 
-    if (c.Notas) {
+    // Botón para ver la letra.
+    // Es independiente del enlace de YouTube.
+    if (c.Notas && String(c.Notas).trim() !== '') {
       const boton = document.createElement('button');
 
       boton.type = 'button';
@@ -393,13 +474,24 @@ function renderCancionesEnLista(olId, idPrograma) {
       boton.dataset.titulo = c.Titulo_cancion || '';
       boton.dataset.tono = c.Tonalidad || '—';
       boton.dataset.letra = c.Notas || '';
-      boton.dataset.youtube = c.Link_YouTube || '';
+      boton.dataset.youtube = obtenerCampoYouTube(c);
 
       acciones.appendChild(boton);
     }
 
-    // Enlace directo a YouTube junto a los botones de cada canción
-    const enlaceValido = obtenerUrlYouTube(c.Link_YouTube);
+    // Enlace directo a YouTube.
+    // Se muestra aunque la canción no tenga letra.
+    const enlaceOriginal = obtenerCampoYouTube(c);
+    const enlaceValido = obtenerUrlYouTube(enlaceOriginal);
+
+    console.log(
+      'YouTube:',
+      c.Titulo_cancion,
+      '| Campo recibido:',
+      enlaceOriginal,
+      '| Enlace válido:',
+      enlaceValido
+    );
 
     if (enlaceValido) {
       const youtube = document.createElement('a');
@@ -409,7 +501,10 @@ function renderCancionesEnLista(olId, idPrograma) {
       youtube.target = '_blank';
       youtube.rel = 'noopener noreferrer';
       youtube.textContent = '▶ YouTube';
-      youtube.setAttribute('aria-label', 'Abrir canción en YouTube');
+      youtube.setAttribute(
+        'aria-label',
+        'Abrir ' + (c.Titulo_cancion || 'canción') + ' en YouTube'
+      );
 
       acciones.appendChild(youtube);
     }
@@ -480,36 +575,6 @@ function actualizarModal() {
   modalTono.textContent = tonoActual;
 }
 
-function obtenerUrlYouTube(url) {
-  if (!url) return '';
-
-  try {
-    const enlace = new URL(String(url).trim());
-
-    if (enlace.protocol !== 'https:') {
-      return '';
-    }
-
-    const dominio = enlace.hostname.replace(/^www\./, '').toLowerCase();
-
-    const dominiosPermitidos = [
-      'youtube.com',
-      'm.youtube.com',
-      'music.youtube.com',
-      'youtu.be'
-    ];
-
-    if (!dominiosPermitidos.includes(dominio)) {
-      return '';
-    }
-
-    return enlace.href;
-
-  } catch (error) {
-    return '';
-  }
-}
-
 function abrirModal(titulo, tono, letra, urlYouTube) {
   if (!modal) return;
 
@@ -543,7 +608,7 @@ function cerrarModal() {
   document.body.style.overflow = '';
 }
 
-// Abrir la letra de la canción seleccionada
+// Abrir la letra de la canción seleccionada.
 document.getElementById('contenido').addEventListener('click', (e) => {
   const boton = e.target.closest('.btn-ver-letra');
 
@@ -557,7 +622,7 @@ document.getElementById('contenido').addEventListener('click', (e) => {
   );
 });
 
-// Controles de transposición
+// Controles de transposición.
 if (btnSubir) {
   btnSubir.addEventListener('click', () => {
     semitonos++;
@@ -572,7 +637,7 @@ if (btnBajar) {
   });
 }
 
-// Cerrar ventana modal
+// Cerrar ventana modal.
 if (modalClose) {
   modalClose.addEventListener('click', cerrarModal);
 }
@@ -619,7 +684,11 @@ function activarVista(nombre) {
 // ====== INICIO DE LA APLICACIÓN ======
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('footer-year').textContent = new Date().getFullYear();
+  const footerYear = document.getElementById('footer-year');
+
+  if (footerYear) {
+    footerYear.textContent = new Date().getFullYear();
+  }
 
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -627,9 +696,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.getElementById('programa-retry').addEventListener('click', cargarDatos);
-  document.getElementById('equipos-retry').addEventListener('click', cargarDatos);
-  document.getElementById('canciones-retry').addEventListener('click', cargarDatos);
+  const programaRetry = document.getElementById('programa-retry');
+  const equiposRetry = document.getElementById('equipos-retry');
+  const cancionesRetry = document.getElementById('canciones-retry');
+
+  if (programaRetry) {
+    programaRetry.addEventListener('click', cargarDatos);
+  }
+
+  if (equiposRetry) {
+    equiposRetry.addEventListener('click', cargarDatos);
+  }
+
+  if (cancionesRetry) {
+    cancionesRetry.addEventListener('click', cargarDatos);
+  }
 
   cargarDatos();
 });
