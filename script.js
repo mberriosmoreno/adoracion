@@ -8,7 +8,15 @@ const state = {
 };
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+const MESES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+];
+
+// =====================================================
+// FECHAS
+// =====================================================
 
 function hoyEnNicaragua() {
   const ahora = new Date();
@@ -28,6 +36,7 @@ function fechaISOaLocal(iso) {
 
 function formatearFechaLarga(iso) {
   const d = fechaISOaLocal(iso);
+
   return `${capitalizar(DIAS[d.getDay()])} ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
@@ -40,11 +49,7 @@ function proximoLunesISO() {
   const hoy = fechaISOaLocal(hoyISO);
   const dia = hoy.getDay();
 
-  let delta = (1 - dia + 7) % 7;
-
-  if (delta === 0 && dia === 1) {
-    delta = 0;
-  }
+  const delta = (1 - dia + 7) % 7;
 
   const prox = new Date(
     hoy.getFullYear(),
@@ -59,6 +64,10 @@ function toISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// =====================================================
+// SELECCIÓN DEL PROGRAMA
+// =====================================================
+
 function seleccionarPrograma(programas) {
   if (!programas || !programas.length) return null;
 
@@ -66,6 +75,7 @@ function seleccionarPrograma(programas) {
   const proxLun = proximoLunesISO();
 
   const activos = programas.filter(p => p.Estado !== 'Cancelado');
+
   const exacto = activos.find(p => p.Fecha === proxLun);
 
   if (exacto) return exacto;
@@ -77,6 +87,10 @@ function seleccionarPrograma(programas) {
   return futuros.length ? futuros[0] : null;
 }
 
+// =====================================================
+// ESTADO DE CONEXIÓN
+// =====================================================
+
 function setStatus(kind, text) {
   const el = document.getElementById('status');
   const txt = document.getElementById('status-text');
@@ -86,6 +100,10 @@ function setStatus(kind, text) {
   el.className = 'status is-' + kind;
   txt.textContent = text;
 }
+
+// =====================================================
+// CARGAR DATOS DESDE GOOGLE SHEETS
+// =====================================================
 
 async function cargarDatos() {
   setStatus('loading', 'Cargando…');
@@ -116,7 +134,9 @@ async function cargarDatos() {
       throw new Error((json && json.error) || 'Respuesta inválida');
     }
 
-    const d = json.data || {};
+    // CORRECCIÓN PRINCIPAL:
+    // La API entrega los registros dentro de json.data.
+    const d = json.data || json;
 
     state.data = {
       programas: d.programas || [],
@@ -124,12 +144,22 @@ async function cargarDatos() {
       canciones: d.canciones || []
     };
 
-    // Diagnóstico: permite comprobar qué enlaces llegan desde Google Sheets.
-    console.log('Canciones recibidas desde Google Sheets:', state.data.canciones);
+    console.log('Datos recibidos:', state.data);
+
+    console.log(
+      'Enlaces de YouTube recibidos:',
+      state.data.canciones.map(c => ({
+        cancion: c.Titulo_cancion,
+        enlace: c.Link_YouTube
+      }))
+    );
 
     state.error = null;
     state.cargado = true;
-    state.programaActual = seleccionarPrograma(state.data.programas);
+
+    state.programaActual = seleccionarPrograma(
+      state.data.programas
+    );
 
     setStatus('ok', 'Actualizado');
 
@@ -156,6 +186,10 @@ async function cargarDatos() {
     renderTodo();
   }
 }
+
+// =====================================================
+// RENDERIZADO GENERAL
+// =====================================================
 
 function renderTodo() {
   renderPrograma();
@@ -185,11 +219,15 @@ function mostrarSolo(vista, estado) {
     ]
   };
 
-  const [ld, er, em, ct] = ids[vista].map(id => document.getElementById(id));
+  const [ld, er, em, ct] = ids[vista].map(id =>
+    document.getElementById(id)
+  );
 
   if (!ld || !er || !em || !ct) return;
 
-  [ld, er, em, ct].forEach(el => el.classList.add('hidden'));
+  [ld, er, em, ct].forEach(el =>
+    el.classList.add('hidden')
+  );
 
   const indice = {
     loading: 0,
@@ -204,6 +242,10 @@ function mostrarSolo(vista, estado) {
     target.classList.remove('hidden');
   }
 }
+
+// =====================================================
+// PROGRAMA
+// =====================================================
 
 function renderPrograma() {
   if (!state.cargado) {
@@ -224,14 +266,22 @@ function renderPrograma() {
     return;
   }
 
-  document.getElementById('prog-nombre').textContent = prog.Nombre_encuentro || 'Encuentro';
-  document.getElementById('prog-fecha').textContent = formatearFechaLarga(prog.Fecha);
-  document.getElementById('prog-hora').textContent = prog.Hora || '—';
-  document.getElementById('prog-lugar').textContent = prog.Lugar || '—';
+  document.getElementById('prog-nombre').textContent =
+    prog.Nombre_encuentro || 'Encuentro';
+
+  document.getElementById('prog-fecha').textContent =
+    formatearFechaLarga(prog.Fecha);
+
+  document.getElementById('prog-hora').textContent =
+    prog.Hora || '—';
+
+  document.getElementById('prog-lugar').textContent =
+    prog.Lugar || '—';
 
   const badge = document.getElementById('prog-estado');
 
   badge.textContent = prog.Estado || '—';
+
   badge.className = 'badge ' + (
     prog.Estado === 'Confirmado'
       ? 'is-confirmado'
@@ -246,6 +296,10 @@ function renderPrograma() {
 
   mostrarSolo('programa', 'content');
 }
+
+// =====================================================
+// EQUIPOS
+// =====================================================
 
 function renderEquipos() {
   if (!state.cargado) {
@@ -307,9 +361,14 @@ function renderEquipoEnLista(ulId, equipo, idPrograma) {
 
     li.appendChild(persona);
     li.appendChild(funcion);
+
     ul.appendChild(li);
   });
 }
+
+// =====================================================
+// CANCIONES
+// =====================================================
 
 function renderCanciones() {
   if (!state.cargado) {
@@ -333,7 +392,10 @@ function renderCanciones() {
   document.getElementById('canciones-context').textContent =
     `Encuentro: ${prog.Nombre_encuentro} · ${formatearFechaLarga(prog.Fecha)}`.trim();
 
-  const hay = renderCancionesEnLista('canciones-lista', prog.ID_programa);
+  const hay = renderCancionesEnLista(
+    'canciones-lista',
+    prog.ID_programa
+  );
 
   if (!hay) {
     mostrarSolo('canciones', 'empty');
@@ -343,27 +405,22 @@ function renderCanciones() {
   mostrarSolo('canciones', 'content');
 }
 
-/* =====================================================
-   FUNCIONES PARA LOS ENLACES DE YOUTUBE
-===================================================== */
+// =====================================================
+// FUNCIONES PARA LOS ENLACES DE YOUTUBE
+// =====================================================
 
-// Lee el enlace aunque el nombre del campo venga con
-// una variación de mayúsculas o un nombre alternativo.
 function obtenerCampoYouTube(cancion) {
   if (!cancion) return '';
 
-  return (
-    cancion.Link_YouTube ||
-    cancion.link_youtube ||
-    cancion.LINK_YOUTUBE ||
-    cancion.URL_YouTube ||
-    cancion.Url_YouTube ||
-    cancion.youtube ||
-    ''
-  ).toString().trim();
+  const campo = Object.keys(cancion).find(
+    key => key.trim().toLowerCase() === 'link_youtube'
+  );
+
+  return campo
+    ? String(cancion[campo] || '').trim()
+    : '';
 }
 
-// Acepta enlaces habituales de YouTube y los normaliza.
 function obtenerUrlYouTube(url) {
   if (!url) return '';
 
@@ -372,7 +429,6 @@ function obtenerUrlYouTube(url) {
 
     if (!texto) return '';
 
-    // Si la celda contiene solo el enlace sin protocolo.
     if (!/^https?:\/\//i.test(texto)) {
       texto = 'https://' + texto.replace(/^\/+/, '');
     }
@@ -389,24 +445,23 @@ function obtenerUrlYouTube(url) {
       dominio === 'youtu.be';
 
     if (!esYouTube) {
-      console.warn('El enlace no pertenece a YouTube:', texto);
+      console.warn('Enlace no reconocido como YouTube:', texto);
       return '';
     }
 
-    // Los enlaces se abren mediante HTTPS.
     enlace.protocol = 'https:';
 
     return enlace.href;
 
   } catch (error) {
-    console.warn('No se pudo interpretar el enlace de YouTube:', url);
+    console.warn('No se pudo interpretar el enlace:', url);
     return '';
   }
 }
 
-/* =====================================================
-   RENDERIZADO DE LAS CANCIONES
-===================================================== */
+// =====================================================
+// RENDERIZADO DE CANCIONES Y ENLACES
+// =====================================================
 
 function renderCancionesEnLista(olId, idPrograma) {
   const ol = document.getElementById(olId);
@@ -429,13 +484,11 @@ function renderCancionesEnLista(olId, idPrograma) {
   canciones.forEach(c => {
     const li = document.createElement('li');
 
-    // Número de canción
     const numero = document.createElement('span');
     numero.className = 'song-num';
     numero.setAttribute('aria-hidden', 'true');
     numero.textContent = c.Orden || '';
 
-    // Información de la canción
     const informacion = document.createElement('div');
 
     const titulo = document.createElement('div');
@@ -451,19 +504,16 @@ function renderCancionesEnLista(olId, idPrograma) {
       informacion.appendChild(artista);
     }
 
-    // Contenedor de acciones
     const acciones = document.createElement('div');
     acciones.className = 'song-actions';
 
-    // Tonalidad
     const tono = document.createElement('span');
     tono.className = 'song-key';
     tono.textContent = c.Tonalidad || '—';
 
     acciones.appendChild(tono);
 
-    // Botón para ver la letra.
-    // Es independiente del enlace de YouTube.
+    // Botón VER LETRA
     if (c.Notas && String(c.Notas).trim() !== '') {
       const boton = document.createElement('button');
 
@@ -472,25 +522,21 @@ function renderCancionesEnLista(olId, idPrograma) {
       boton.textContent = 'Ver letra';
 
       boton.dataset.titulo = c.Titulo_cancion || '';
-      boton.dataset.tono = c.Tonalidad || '—';
+      boton.dataset.tono = c.Tonalidad || 'C';
       boton.dataset.letra = c.Notas || '';
       boton.dataset.youtube = obtenerCampoYouTube(c);
 
       acciones.appendChild(boton);
     }
 
-    // Enlace directo a YouTube.
-    // Se muestra aunque la canción no tenga letra.
+    // ENLACE DIRECTO A YOUTUBE
     const enlaceOriginal = obtenerCampoYouTube(c);
     const enlaceValido = obtenerUrlYouTube(enlaceOriginal);
 
     console.log(
-      'YouTube:',
+      'Diagnóstico YouTube:',
       c.Titulo_cancion,
-      '| Campo recibido:',
-      enlaceOriginal,
-      '| Enlace válido:',
-      enlaceValido
+      enlaceValido || 'SIN ENLACE VÁLIDO'
     );
 
     if (enlaceValido) {
@@ -501,6 +547,7 @@ function renderCancionesEnLista(olId, idPrograma) {
       youtube.target = '_blank';
       youtube.rel = 'noopener noreferrer';
       youtube.textContent = '▶ YouTube';
+
       youtube.setAttribute(
         'aria-label',
         'Abrir ' + (c.Titulo_cancion || 'canción') + ' en YouTube'
@@ -519,7 +566,9 @@ function renderCancionesEnLista(olId, idPrograma) {
   return true;
 }
 
-// ====== LÓGICA DE LA VENTANA MODAL Y TRANSPOSICIÓN ======
+// =====================================================
+// MODAL Y TRANSPOSICIÓN
+// =====================================================
 
 const modal = document.getElementById('modal-letra');
 const modalTitulo = document.getElementById('modal-titulo');
@@ -535,14 +584,22 @@ let letraOriginal = '';
 let tonoOriginal = 'C';
 let semitonos = 0;
 
-const NOTAS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const NOTAS_BEMOLES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+const NOTAS = [
+  'C', 'C#', 'D', 'D#', 'E', 'F',
+  'F#', 'G', 'G#', 'A', 'A#', 'B'
+];
+
+const NOTAS_BEMOLES = [
+  'C', 'Db', 'D', 'Eb', 'E', 'F',
+  'Gb', 'G', 'Ab', 'A', 'Bb', 'B'
+];
 
 function transponerAcordes(texto, semitonos) {
   return texto.replace(
     /\b([A-G][#b]?m?(?:aj|dim|aug|sus|add)?[0-9]*)\b/g,
     (match) => {
       let notaBase = match.charAt(0);
+
       let alteracion =
         match.charAt(1) === '#' || match.charAt(1) === 'b'
           ? match.charAt(1)
@@ -559,6 +616,7 @@ function transponerAcordes(texto, semitonos) {
 
       if (index !== -1) {
         let nuevoIndex = (index + semitonos + 12) % 12;
+
         return NOTAS[nuevoIndex] + sufijo;
       }
 
@@ -568,10 +626,18 @@ function transponerAcordes(texto, semitonos) {
 }
 
 function actualizarModal() {
-  modalTexto.innerHTML = transponerAcordes(letraOriginal, semitonos)
-    .replace(/\n/g, '<br>');
+  if (!modalTexto || !modalTono) return;
 
-  const tonoActual = transponerAcordes(tonoOriginal, semitonos);
+  modalTexto.innerHTML = transponerAcordes(
+    letraOriginal,
+    semitonos
+  ).replace(/\n/g, '<br>');
+
+  const tonoActual = transponerAcordes(
+    tonoOriginal,
+    semitonos
+  );
+
   modalTono.textContent = tonoActual;
 }
 
@@ -579,6 +645,7 @@ function abrirModal(titulo, tono, letra, urlYouTube) {
   if (!modal) return;
 
   modalTitulo.textContent = titulo;
+
   letraOriginal = letra || '';
   tonoOriginal = tono || 'C';
   semitonos = 0;
@@ -608,21 +675,25 @@ function cerrarModal() {
   document.body.style.overflow = '';
 }
 
-// Abrir la letra de la canción seleccionada.
-document.getElementById('contenido').addEventListener('click', (e) => {
-  const boton = e.target.closest('.btn-ver-letra');
+// Abrir letra
+const contenido = document.getElementById('contenido');
 
-  if (!boton) return;
+if (contenido) {
+  contenido.addEventListener('click', (e) => {
+    const boton = e.target.closest('.btn-ver-letra');
 
-  abrirModal(
-    boton.dataset.titulo,
-    boton.dataset.tono,
-    boton.dataset.letra,
-    boton.dataset.youtube
-  );
-});
+    if (!boton) return;
 
-// Controles de transposición.
+    abrirModal(
+      boton.dataset.titulo,
+      boton.dataset.tono,
+      boton.dataset.letra,
+      boton.dataset.youtube
+    );
+  });
+}
+
+// Subir tono
 if (btnSubir) {
   btnSubir.addEventListener('click', () => {
     semitonos++;
@@ -630,6 +701,7 @@ if (btnSubir) {
   });
 }
 
+// Bajar tono
 if (btnBajar) {
   btnBajar.addEventListener('click', () => {
     semitonos--;
@@ -637,7 +709,7 @@ if (btnBajar) {
   });
 }
 
-// Cerrar ventana modal.
+// Cerrar modal
 if (modalClose) {
   modalClose.addEventListener('click', cerrarModal);
 }
@@ -660,28 +732,38 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ====== NAVEGACIÓN ENTRE VISTAS ======
+// =====================================================
+// NAVEGACIÓN
+// =====================================================
 
 function activarVista(nombre) {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     const activa = btn.dataset.view === nombre;
 
     btn.classList.toggle('is-active', activa);
-    btn.setAttribute('aria-selected', activa ? 'true' : 'false');
+
+    btn.setAttribute(
+      'aria-selected',
+      activa ? 'true' : 'false'
+    );
   });
 
   document.querySelectorAll('.view').forEach(vista => {
     vista.classList.add('hidden');
   });
 
-  const vistaSeleccionada = document.getElementById('view-' + nombre);
+  const vistaSeleccionada = document.getElementById(
+    'view-' + nombre
+  );
 
   if (vistaSeleccionada) {
     vistaSeleccionada.classList.remove('hidden');
   }
 }
 
-// ====== INICIO DE LA APLICACIÓN ======
+// =====================================================
+// INICIO DE LA APLICACIÓN
+// =====================================================
 
 document.addEventListener('DOMContentLoaded', () => {
   const footerYear = document.getElementById('footer-year');
