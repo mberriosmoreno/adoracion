@@ -17,7 +17,6 @@
   <header class="site-header" role="banner">
     <div class="container header-inner">
       <div class="brand">
-        <!-- Icono de Notas Musicales -->
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18V5l12-2v13"></path>
@@ -167,7 +166,7 @@
 
       <div class="empty-card hidden" id="canciones-empty">
         <h2>Todavía no hay canciones programadas</h2>
-        <p>Cuando se registre el repertorio del próximo lunes, aparecerá aquí.</p>
+        <p>Cuando se registre el repertorio del próximo lunes, aparecerán aquí.</p>
       </div>
 
       <div class="hidden" id="canciones-content">
@@ -189,13 +188,12 @@
     </div>
   </footer>
 
-  <!-- Ventana Modal para la Letra y Transposición -->
+  <!-- Ventana Modal para la Letra, Transposición y enlace de YouTube -->
   <div id="modal-letra" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
     <div class="modal-content">
       <button class="modal-close" id="modal-close" aria-label="Cerrar">&times;</button>
       <h2 id="modal-titulo" class="modal-title">—</h2>
-      
-      <!-- Controles de Tono -->
+
       <div class="modal-meta">
         <span class="meta-label" style="font-size: 0.85rem; color: var(--texto-suave); margin-right: 8px;">Tono:</span>
         <span id="modal-tono" class="song-key">—</span>
@@ -204,11 +202,22 @@
           <button id="btn-subir-tono" class="btn-tono" aria-label="Subir medio tono">+</button>
         </div>
       </div>
-      
+
       <div class="modal-body" id="modal-letra-texto"></div>
+
+      <a
+        id="modal-youtube"
+        class="youtube-link hidden"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        🎵 Escuchar canción en YouTube
+      </a>
     </div>
   </div>
 
-  <script src="app.js" defer></script>
+  <!-- Archivo JavaScript -->
+  <script src="script.js" defer></script>
 </body>
 </html>
